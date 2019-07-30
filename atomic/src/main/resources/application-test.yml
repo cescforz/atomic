@@ -1,0 +1,14 @@
+server:
+  port: 8089
+
+spring:
+  datasource:
+    druid:
+      url: jdbc:mysql://120.78.3.1:3306/catch_bar?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowMultiQueries=true&zeroDateTimeBehavior=convertToNull
+      username: root
+      password: Admin_23
+
+appKey: bar
+appSecret: catch_bar
+bucket: cesc
+endPoint: http://cescforz.cn

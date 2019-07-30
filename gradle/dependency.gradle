@@ -1,0 +1,27 @@
+/**
+ * ===================================================================================================================
+ * -------------------------------------------      统一资源版本控制       ----------------------------------------------
+ * ===================================================================================================================
+ */
+
+def version = [
+        JDK                      : JavaVersion.VERSION_1_8,           //JDK
+        JDBC                     : '6.0.6',                           //JDBC
+        SPRING_BOOT              : '2.1.6.RELEASE',                   //spring boot 全家桶版本
+        MYBATIS_PLUS_BOOT_STARTER: '3.1.2',                           //mybatis-plus-boot-starter
+        SPRING_BOOT_DRUID        : '1.1.18',                          //druid和spring-boot整合包
+        SPRING_CLOUD             : 'Finchley.RELEASE',                //spring cloud全家桶
+        ALI_DRUID                : '1.1.19',                          //阿里巴巴druid
+        ALI_FASTJSON             : '1.2.58',                          //阿里巴巴fastJson
+        PAGEHELPER               : '1.2.12',                          //分页插件
+        COMMONS_ENCRYPT          : '1.0.1',
+]
+//统一文件编码控制
+def encoding = [
+        OPTIONS: 'UTF-8'
+]
+//暴露参数
+ext.custom = [
+        version : version,
+        encoding: encoding,
+]

@@ -1,0 +1,223 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+/**
+ *
+ *   ===================================================================================================================
+ *   ===================================================================================================================
+ *   ______                         _    _____             __ _                       _   _
+ *   |  ____|                       | |  / ____|           / _(_)                     | | (_)
+ *   | |__ ___  _ __ _ __ ___   __ _| | | |     ___  _ __ | |_ _  __ _ _   _ _ __ __ _| |_ _  ___  _ __
+ *   |  __/ _ \| '__| '_ ` _ \ / _` | | | |    / _ \| '_ \|  _| |/ _` | | | | '__/ _` | __| |/ _ \| '_ \
+ *   | | | (_) | |  | | | | | | (_| | | | |___| (_) | | | | | | | (_| | |_| | | | (_| | |_| | (_) | | | |
+ *   |_|  \___/|_|  |_| |_| |_|\__,_|_|  \_____\___/|_| |_|_| |_|\__, |\__,_|_|  \__,_|\__|_|\___/|_| |_|
+ *   __/ |
+ *   |___/
+ *   ===================================================================================================================
+ *   ===================================================================================================================
+ *
+ *  step1.项目构建文件,注意,buildscript块和plugins块必须作为build.gradle脚本的前两个块存在,否则会报错.
+ *
+ */
+
+/**
+ * ===================================================================================================================
+ * -------------------------------------------       引入项目插件         ----------------------------------------------
+ * ===================================================================================================================
+ */
+
+plugins {
+    id "com.gradle.build-scan" version "2.3"                        //生成构建分析数据.
+    id "net.researchgate.release" version "2.8.1"                   //用于向使用Gradle的项目提供类似Maven的发布过程。
+    id "com.bmuschko.docker-java-application" version "3.3.6"       //通过其远程API管理Docker镜像和容器.
+    id "com.bmuschko.docker-remote-api" version "3.3.6"             //Gradle插件,通过其远程API管理Docker镜像和容器.
+    id 'org.springframework.boot' version '2.1.6.RELEASE'           //spring提供的spring boot插件,主要用到了其依赖管理的功能.
+}
+
+/**
+ * ===================================================================================================================
+ * -------------------------------------------      所有项目的通用配置     ----------------------------------------------
+ * ===================================================================================================================
+ */
+configure(allprojects) { project ->
+    //项目基础属性
+    group 'cn.cecsforz'           //项目所属组织
+    version '1.0.0-SNAPSHOT'      //项目版本号
+
+    //引入插件
+    apply plugin: 'java'                                            //java插件
+    apply plugin: 'maven'                                           //maven插件
+    apply plugin: 'idea'                                            //IDEA插件
+    apply plugin: 'eclipse'                                         //eclipse插件
+    apply plugin: 'org.springframework.boot'                        //spring boot插件
+    apply plugin: 'io.spring.dependency-management'                 //实现maven的依赖统一管理功能
+    apply plugin: 'com.bmuschko.docker-remote-api'
+    apply plugin: 'com.bmuschko.docker-java-application'
+    apply from: "${rootProject.rootDir}/gradle/dependency.gradle"   //引入jar包版本配置文件
+
+    //JDK版本声明
+    sourceCompatibility = custom.version.JDK
+    targetCompatibility = custom.version.JDK
+
+    //配置仓库
+    repositories {
+        mavenLocal()
+        maven { url "https://oss.sonatype.org/content/groups/public" }
+        maven { url "https://oss.sonatype.org/content/groups/staging" }
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public' }
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    //指定项目编码
+    tasks.withType(JavaCompile) {
+        options.encoding = "${custom.encoding.OPTIONS}"
+    }
+
+    //在多模块下,授权打包依赖模块
+    jar {
+        enabled = true
+    }
+
+    //重打包基础配置
+    bootJar {
+        launchScript()
+        archiveName = "${project.group}_${project.name}_${project.version}.jar"
+    }
+
+
+}
+
+/**
+ * ===================================================================================================================
+ * -------------------------------------------      所有子项目的通用配置     ---------------------------------------------
+ * ===================================================================================================================
+ */
+configure(subprojects) {
+    project ->
+        dependencyManagement {
+            overriddenByDependencies = false
+            dependencies {
+                imports {
+                    /**
+                     * 通过依赖spring boot dependencies来取代继承spring-boot-starter-parent,
+                     * 该配置可以省略.
+                     */
+                    mavenBom SpringBootPlugin.BOM_COORDINATES
+
+                    /**
+                     * 通过依赖spring cloud dependencies 来统一管理spring cloud 的版本
+                     */
+                    mavenBom "org.springframework.cloud:spring-cloud-dependencies:${custom.version.SPRING_CLOUD}"
+
+                }
+                /**
+                 * mybatis-spring-boot整合包,该项目必须采用dependency来管理版本,而不能使用mavenBom,
+                 * 使用mavenBom可能会导致其依赖的jar包和spring依赖的版本发生冲突.
+                 */
+                dependency "com.baomidou:mybatis-plus-boot-starter:${custom.version.MYBATIS_PLUS_BOOT_STARTER}"
+                /**
+                 * 阿里巴巴druid数据库连接池
+                 */
+                dependency "com.alibaba:druid:${custom.version.ALI_DRUID}"
+                /**
+                 * fastJson https://mvnrepository.com/artifact/com.alibaba/fastjson
+                 */
+                dependency "com.alibaba:fastjson:${custom.version.ALI_FASTJSON}"
+                /**
+                 * druid数据库连接池和spring-boot整合包
+                 */
+                dependency "com.alibaba:druid-spring-boot-starter:${custom.version.SPRING_BOOT_DRUID}"
+                /**
+                 * 分页插件
+                 */
+                dependency "com.github.pagehelper:pagehelper-spring-boot-starter:${custom.version.PAGEHELPER}"
+
+                dependency "cn.cescforz:commons-encrypt:${custom.version.COMMONS_ENCRYPT}"
+
+            }
+        }
+}
+
+configure(subprojects) {
+    project ->
+        /**
+         * -============================================================================================================
+         * -=====================================此处存放业务模块的公共依赖==================================================
+         * -============================================================================================================
+         */
+        dependencies {
+
+            /**
+             * -=================================================================================-
+             * - ********************       [运维]性质相关依赖          *************************** -
+             * -=================================================================================-
+             */
+
+
+            /**
+             * -=================================================================================-
+             * - ********************       [工具/功能]性质相关依赖      *************************** -
+             * -=================================================================================-
+             */
+            //Json处理工具
+            compile 'com.alibaba:fastjson'
+            //使用lombok来简化掉编码过程中的通用的方法.
+            compile 'org.projectlombok:lombok'
+            //spring boot安全依赖
+            //compile 'org.springframework.boot:spring-boot-starter-security'
+            //自定义配置管理
+            compile 'org.springframework.boot:spring-boot-configuration-processor'
+
+            //
+            compile 'cn.cescforz:commons-encrypt'
+            compile 'cn.cescforz:commons-lang:1.0.0-SNAPSHOT'
+
+
+            /**
+             * -=================================================================================-
+             * - ********************       [数据库]性质相关依赖        *************************** -
+             * -=================================================================================-
+             */
+
+            //阿里巴巴druid数据库连接池
+            compile 'com.alibaba:druid'
+
+            //jdbc相关配置
+            runtime 'mysql:mysql-connector-java'
+
+            // druid数据库连接池和spring-boot整合包
+            compile 'com.alibaba:druid-spring-boot-starter'
+            // mybatis-plus整合包
+            compile 'com.baomidou:mybatis-plus-boot-starter'
+
+            //分页插件
+            compile 'com.github.pagehelper:pagehelper-spring-boot-starter'
+
+            //测试依赖
+            testCompile 'org.springframework.boot:spring-boot-starter-test'
+        }
+}
+
+
+/**
+ * ===================================================================================================================
+ * -------------------------------------------          基础配置          ---------------------------------------------
+ * ===================================================================================================================
+ */
+
+
+/**
+ * 关闭父项目的打包功能
+ */
+bootJar{
+    enabled=false
+}
+/**
+ * 关闭父项目的打包功能
+ */
+jar{
+    enabled=false
+}
